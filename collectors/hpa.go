@@ -19,6 +19,7 @@ package collectors
 import (
 	"context"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/kubernetes"
@@ -57,16 +58,16 @@ var (
 		"Desired number of replicas of pods managed by this autoscaler.",
 		[]string{"namespace", "hpa"}, nil,
 	)
-	descHorizontalPodAutoscalerSpecTargetCPU = prometheus.NewDesc(
-		"kube_hpa_spec_target_cpu",
-		"Target CPU percentage of pods managed by this autoscaler.",
-		[]string{"namespace", "hpa"}, nil,
-	)
-	descHorizontalPodAutoscalerStatusCurrentCPU = prometheus.NewDesc(
-		"kube_hpa_status_current_cpu",
-		"Current CPU percentage of the pods managed by this autoscaler.",
-		[]string{"namespace", "hpa"}, nil,
-	)
+	// descHorizontalPodAutoscalerSpecTargetCPU = prometheus.NewDesc(
+	// 	"kube_hpa_spec_target_cpu",
+	// 	"Target CPU percentage of pods managed by this autoscaler.",
+	// 	[]string{"namespace", "hpa"}, nil,
+	// )
+	// descHorizontalPodAutoscalerStatusCurrentCPU = prometheus.NewDesc(
+	// 	"kube_hpa_status_current_cpu",
+	// 	"Current CPU percentage of the pods managed by this autoscaler.",
+	// 	[]string{"namespace", "hpa"}, nil,
+	// )
 	descHorizontalPodAutoscalerLabels = prometheus.NewDesc(
 		descHorizontalPodAutoscalerLabelsName,
 		descHorizontalPodAutoscalerLabelsHelp,
@@ -87,6 +88,7 @@ func RegisterHorizontalPodAutoScalerCollector(registry prometheus.Registerer, ku
 
 	hpaLister := HPALister(func() (hpas autoscaling.HorizontalPodAutoscalerList, err error) {
 		for _, h := range hpainf.GetStore().List() {
+			//spew.Dump(h)
 			hpas.Items = append(hpas.Items, *(h.(*autoscaling.HorizontalPodAutoscaler)))
 		}
 		return hpas, nil
@@ -112,8 +114,8 @@ func (hc *hpaCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descHorizontalPodAutoscalerSpecMinReplicas
 	ch <- descHorizontalPodAutoscalerStatusCurrentReplicas
 	ch <- descHorizontalPodAutoscalerStatusDesiredReplicas
-	ch <- descHorizontalPodAutoscalerSpecTargetCPU
-	ch <- descHorizontalPodAutoscalerStatusCurrentCPU
+	// ch <- descHorizontalPodAutoscalerSpecTargetCPU
+	// ch <- descHorizontalPodAutoscalerStatusCurrentCPU
 	ch <- descHorizontalPodAutoscalerLabels
 }
 
@@ -125,6 +127,8 @@ func (hc *hpaCollector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 	for _, h := range hpas.Items {
+		glog.Info("JOE spew")
+		spew.Dump(h)
 		hc.collectHPA(ch, h)
 	}
 }
@@ -150,10 +154,10 @@ func (hc *hpaCollector) collectHPA(ch chan<- prometheus.Metric, h autoscaling.Ho
 	addGauge(descHorizontalPodAutoscalerSpecMinReplicas, float64(*h.Spec.MinReplicas))
 	addGauge(descHorizontalPodAutoscalerStatusCurrentReplicas, float64(h.Status.CurrentReplicas))
 	addGauge(descHorizontalPodAutoscalerStatusDesiredReplicas, float64(h.Status.DesiredReplicas))
-	if h.Spec.TargetCPUUtilizationPercentage != nil {
-		addGauge(descHorizontalPodAutoscalerSpecTargetCPU, float64(*h.Spec.TargetCPUUtilizationPercentage))
-	}
-	if h.Status.CurrentCPUUtilizationPercentage != nil {
-		addGauge(descHorizontalPodAutoscalerStatusCurrentCPU, float64(*h.Status.CurrentCPUUtilizationPercentage))
-	}
+	// if h.Spec.TargetCPUUtilizationPercentage != nil {
+	// 	addGauge(descHorizontalPodAutoscalerSpecTargetCPU, float64(*h.Spec.TargetCPUUtilizationPercentage))
+	// }
+	// if h.Status.CurrentCPUUtilizationPercentage != nil {
+	// 	addGauge(descHorizontalPodAutoscalerStatusCurrentCPU, float64(*h.Status.CurrentCPUUtilizationPercentage))
+	// }
 }
